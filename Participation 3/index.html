@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Fruit Word Guessing Game</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #ccefff;
+    }
+
+    h2 {
+      color: #0000cc;
+    }
+
+    #game-area {
+      position: relative;
+      height: 200px;
+      margin: 20px auto;
+      width: 100%;
+      background: url('Stud_resources/images/track.png') repeat-x bottom;
+      background-size: contain;
+    }
+
+    #lego-man {
+      position: absolute;
+      left: 20px;
+      bottom: 10px;
+      height: 120px;
+    }
+
+    #train {
+      position: absolute;
+      bottom: 10px;
+      height: 100px;
+      transition: left 0.4s ease;
+    }
+
+    #input-section {
+      margin-top: 20px;
+    }
+
+    #letter-input {
+      font-size: 1.2em;
+      width: 50px;
+      text-align: center;
+    }
+
+    #word-display {
+      margin-top: 20px;
+    }
+
+    .letter {
+      display: inline-block;
+      width: 30px;
+      height: 30px;
+      border: 1px solid #000;
+      margin: 5px;
+      text-align: center;
+      font-size: 1.5em;
+      line-height: 30px;
+    }
+
+    #wrong-letters {
+      margin-top: 15px;
+      font-weight: bold;
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <h2>Guess the type of fruit to stop the train, only 6 wrong letters allowed</h2>
+
+  <div id="game-area">
+    <img src="Stud_resources/images/legoman.png" id="lego-man">
+    <img src="Stud_resources/images/train.png" id="train">
+  </div>
+
+  <div id="input-section">
+    <input type="text" id="letter-input" maxlength="1">  
+    <button onclick="submitGuess()">Submit Guess</button>  
+  </div>
+
+  <div id="word-display"></div>
+  <div id="wrong-letters">Wrong guesses: </div>
+
+ 
+  <audio id="correct-sound" src="Sounds/correct-6033.mp3"></audio>
+  <audio id="wrong-sound" src="Sounds/fail-144746.mp3"></audio>
+  <audio id="win-sound" src="Sounds/sci-fi-congratulations-message-notification-sound-sfx-334728.mp3"></audio>
+  <audio id="game-over-sound" src="Sounds/game-over-arcade-6435.mp3"></audio>
+
+  <script src="https://code.jquery.com/jquery-2.0.0.min.js"></script>
+  
+  <script>
+    const words = [  // list of fruits in the array
+      "apple", "banana", "cherry", "grapes", "mango", "papaya", "orange", "guava", "kiwi", "melon",
+      "pear", "plum", "peach", "apricot", "fig", "lemon", "lime", "lychee", "date", "berry",
+      "coconut", "avocado", "pomegranate", "tangerine", "nectarine", "jackfruit", "durian", "starfruit", "dragonfruit", "strawberries"
+    ];
+
+    let selectedWord = words[Math.floor(Math.random() * words.length)];
+    let guessedLetters = [];   // Array of guessed letters
+    let wrongGuesses = 0;  // Count for  the wrong guesses
+    const maxWrong = 6;  // maximum number allowed for wrong guesses
+
+
+    let trainStartLeft = window.innerWidth - 150;
+    let trainHitLeft = 80;
+
+    $(document).ready(function () {
+      $('#train').css('left', `${trainStartLeft}px`);
+      updateDisplay();
+
+      $('#letter-input').keypress(function (e) {
+        if (e.which === 13) {
+          submitGuess();
+        }
+      });
+    });
+
+    function updateDisplay() { // display the current progress of the guessed word
+      let display = ''; 
+      for (let letter of selectedWord) {
+        display += guessedLetters.includes(letter)
+          ? `<span class="letter">${letter.toUpperCase()}</span>`
+          : `<span class="letter"></span>`;  // Empty box for unguessed letter
+      }
+      $('#word-display').html(display);
+    }
+
+    function submitGuess() {
+      const input = $('#letter-input').val().toLowerCase();
+      $('#letter-input').val('');
+
+      if (!/^[a-z]$/.test(input)) { // Validate input is a single letter and only alphabets
+        alert("Please enter a single letter.");  // alert 
+        return;
+      }
+
+      if (guessedLetters.includes(input)) {  // Prevent duplicate guess
+        alert("You already guessed that letter.");
+        return;
+      }
+
+      guessedLetters.push(input); // Add to guessed letters
+
+      if (selectedWord.includes(input)) {
+        document.getElementById('correct-sound').play();  // Play correct sound
+      } else {
+        wrongGuesses++;
+        $('#wrong-letters').append(input.toUpperCase() + ' ');
+        document.getElementById('wrong-sound').play();
+        moveTrain(wrongGuesses);
+      }
+
+      updateDisplay(); // Update word display
+      checkGameStatus();
+    }
+
+    function moveTrain(wrongCount) {
+      const step = (trainStartLeft - trainHitLeft) / maxWrong;  // Distance per wrong guess
+      const newLeft = trainStartLeft - step * wrongCount; // Calculate new position
+      $('#train').css('left', `${newLeft}px`);  // Move train from right to left
+    }
+
+    function checkGameStatus() {
+      const won = selectedWord.split('').every(letter => guessedLetters.includes(letter));  // Check if all letters guessed are correct
+
+      if (won) {
+        document.getElementById('win-sound').play();
+        alert(" Congratulations! You saved the man!");
+        disableInput();
+        setTimeout(() => location.reload(), 3000); // Reload after 3s of display
+        return;
+      }
+
+      if (wrongGuesses >= maxWrong) {
+        setTimeout(() => {
+          document.getElementById('game-over-sound').play();
+          alert(` Game Over! The train hit the man. The word was: ${selectedWord.toUpperCase()}`);
+          disableInput();
+          setTimeout(() => location.reload(), 3000);
+        }, 450);
+      }
+    }
+
+    function disableInput() {
+      $('#letter-input').prop('disabled', true);
+    }
+  </script>
+</body>
+</html>
